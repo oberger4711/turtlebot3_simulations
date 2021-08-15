@@ -95,7 +95,7 @@
       </sensor>
     </link>
 
-    <link name="base_scan">
+    <link name="rgbd_link">
       <inertial>
         <pose>-0.020 0 0.161 0 0 0</pose>
         <inertia>
@@ -109,58 +109,45 @@
         <mass>0.114</mass>
       </inertial>
 
-      <collision name="lidar_sensor_collision">
-        <pose>-0.020 0 0.161 0 0 0</pose>
-        <geometry>
-          <cylinder>
-            <radius>0.0508</radius>
-            <length>0.055</length>
-          </cylinder>
-        </geometry>
-      </collision>
-
-      <visual name="lidar_sensor_visual">
-        <pose>-0.032 0 0.171 0 0 0</pose>
-        <geometry>
-          <mesh>
-            <uri>model://turtlebot3_burger/meshes/lds.dae</uri>
-            <scale>0.001 0.001 0.001</scale>
-          </mesh>
-        </geometry>
-      </visual>
-
-      <sensor name="hls_lfcd_lds" type="ray">
+      <!-- Instead of 2D LiDAR, we have a rgbd sensor now. -->
+      <sensor name="rgbd" type="depth">
         <always_on>true</always_on>
         <visualize>true</visualize>
         <pose>-0.032 0 0.171 0 0 0</pose>
-        <update_rate>5</update_rate>
-        <ray>
-          <scan>
-            <horizontal>
-              <samples>360</samples>
-              <resolution>1.000000</resolution>
-              <min_angle>0.000000</min_angle>
-              <max_angle>6.280000</max_angle>
-            </horizontal>
-          </scan>
-          <range>
-            <min>0.120000</min>
-            <max>3.5</max>
-            <resolution>0.015000</resolution>
-          </range>
-          <noise>
-            <type>gaussian</type>
-            <mean>0.0</mean>
-            <stddev>0.01</stddev>
-          </noise>
-        </ray>
-        <plugin name="turtlebot3_laserscan" filename="libgazebo_ros_ray_sensor.so">
+        <update_rate>1</update_rate> <!-- TODO: Should be 30 -->
+        <camera>
+          <horizontal_fov>1.22173</horizontal_fov>
+          <image>
+            <!-- TODO: Should be this: -->
+            <!--
+            <width>1024</width>
+            <height>768</height>
+            -->
+            <width>512</width>
+            <height>384</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.25</near>
+            <far>9.0</far>
+          </clip>
+        </camera>
+        <!--Depth camera plugin for ROS2, see https://github.com/ros-simulation/gazebo_ros_pkgs/wiki/ROS-2-Migration:-Camera#gazebo_ros_depth_camera -->
+        <plugin name="rgbd_plugin" filename="libgazebo_ros_camera.so">
           <ros>
-            <!-- <namespace>/tb3</namespace> -->
-            <remapping>~/out:=scan</remapping>
+            <!--<namespace>custom_ns</namespace>-->
+            <argument>custom_camera/image_raw:=rgbd/image_raw</argument>
+            <argument>custom_camera/image_depth:=rgbd/image_depth</argument>
+            <argument>custom_camera/camera_info:=rgbd/camera_info</argument>
+            <argument>custom_camera/camera_info_depth:=rgbd/camera_info_depth</argument>
+            <argument>custom_camera/points:=rgbd/points</argument>
           </ros>
-          <output_type>sensor_msgs/LaserScan</output_type>
-          <frame_name>base_scan</frame_name>
+          <frame_name>rgbd</frame_name>
+          <!--TODO: What is that??-->
+          <!--<hack_baseline>0.07</hack_baseline>-->
+          <!--TODO: Need to repeat this?-->
+          <min_depth>0.25</min_depth>
+          <max_depth>9.0</max_depth>
         </plugin>
       </sensor>
     </link>
@@ -353,9 +340,9 @@
       </axis>
     </joint>
 
-    <joint name="lidar_joint" type="fixed">
+    <joint name="rgbd_joint" type="fixed">
       <parent>base_link</parent>
-      <child>base_scan</child>
+      <child>rgbd_link</child>
       <pose>-0.032 0 0.171 0 0 0</pose>
       <axis>
         <xyz>0 0 1</xyz>
@@ -391,7 +378,7 @@
 
       <odometry_topic>odom</odometry_topic>
       <odometry_frame>odom</odometry_frame>
-      <robot_base_frame>base_footprint</robot_base_frame>
+      <robot_base_frame>odom_pose</robot_base_frame>
 
     </plugin>
 
